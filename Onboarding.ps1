@@ -24,8 +24,8 @@ $TempPassword = "Welcome@123"
 #Step 1: Create user object
     #Will use 'new-aduser' to create the object with name only THEN add info with 'set-aduser'.
 New-ADUser -SamAccountName "$FullName"
-
-#-GivenName "$FirstName" -Surname "$LastName" -DisplayName "$FirstName $LastName" -path '?' -AccountPassword (-AsSecureString "$TempPassword") -City "$Region" -Company "Sparkhound" -Department "$Department" -Description
+Set-ADUser -Identity "$FullName" -GivenName "$FirstName" -Surname "$LastName" -DisplayName "$FirstName $LastName" -path '?' -AccountPassword (-AsSecureString "$TempPassword") -City "$Region" 
+Set-ADUser -Company "Sparkhound" -Department "$Department" -Description $Title -EmailAddress "$FullName@sparkhound.com" -Enabled:$true -Manager "$Manager" -MobilePhone "$PhoneNumber" -
 
 
 $NewUser = "DanLand.User"
