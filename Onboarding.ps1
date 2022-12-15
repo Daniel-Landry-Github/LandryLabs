@@ -1,18 +1,8 @@
 ﻿#"Onboarding Script"
 
 #Variable Declarations
-$FirstName = Read-Host "First Name"
-$LastName = Read-Host "Last Name"
-$FullName = "$FirstName $LastName"
-$Title = Read-Host "Title"
-$Region = Read-Host "Region"
-$PhoneNumber = Read-Host "Phone Number"
-$username = "$FirstName.$LastName"
-$EmailAddress = "$username@sparkhound.com"
-$PersonalEmail = Read-Host "Personal Email"
-$Department = Read-Host "Department"
-$Company = "Sparkhound"
-$Manager = Read-Host "Manager"
+$FirstName = Read-Host "First Name"; $LastName = Read-Host "Last Name"; $Name = "$FirstName $LastName"; $Title = Read-Host "Title"; $Region = Read-Host "Region"; $PhoneNumber = Read-Host "Phone Number"
+$username = "$FirstName.$LastName"; $EmailAddress = "$username@sparkhound.com"; $PersonalEmail = Read-Host "Personal Email"; $Department = Read-Host "Department", $Company = "Sparkhound", $Manager = Read-Host "Manager"
 $MirrorUser = Read-Host "User to Mirror (N if no mirroring)"
 $Contractor = Read-Host "Contractor Y/N" 
 #Contractor changes: Descrption 'contractor (company)', job title 'Contractor', Company 'Contractor', AD Primary group 'Contract Labor'.
@@ -22,7 +12,6 @@ $Company = Read-Host "Contractor Company"
 $Title = "Contractor ($company)"
 }
 else {""}
-
 $StartDate = Read-Host "Start Date"
 $Practice = Read-Host "Practice"
 $EmploymentStatus = Read-Host "Full time/Part time/Contractor"
@@ -32,25 +21,34 @@ $UKGSSO = Read-Host "UKG SSO Y/N"
 $OpenAirSSO = Read-Host "OpenAir SSO Y/N"
 $NetSuiteSSO = Read-Host "NetSuite SSO Y/N"
 $Password = Read-Host "Password: " -AsSecureString
-$AdminCredUser = Get-Credential -UserName dalandry.admin@sparkhound.com
+$AdminCredUser = Get-Credential -UserName dalandry.admin@sparkhound.com -Message "Enter your admin password: "
 
 #Establishing MSOline Connection for cloud items.
-Connect-MsolService
-Connect-AzureAD
+Connect-MsolService -Credential $AdminCredUser
+Connect-AzureAD -Credential $AdminCredUser
 
 
 
 #Step 1: Create user object
-    #Will use 'new-aduser' to create the object with name only THEN add info with 'set-aduser'.
-New-ADUser -Name "$FullName" -samaccountname $username -AccountPassword $Password -Enabled:$true -GivenName $FirstName -Surname $LastName -DisplayName $FullName -City $Region -Company $Company -Department $Department -Description $Title -EmailAddress $EmailAddress -Manager $Manager -MobilePhone $PhoneNumber -Title $Title
+
+"Step 1 of X - Starting account creation..."
+New-ADUser -Name "$Name" -samaccountname $username -UserPrincipalName $EmailAddress -AccountPassword $Password -Enabled 1 -ChangePasswordAtLogon 1
+$CheckAccountCreation = (get-aduser -Identity $username -properties *).userprincipalname
+if ($CheckAccountCreation -eq $EmailAddress) {"Account created for $Name. Populating information..."} else {"Account not created. Please investigate."}
+Set-ADUser -Identity $username -GivenName $FirstName -Surname $LastName -DisplayName $Name -City $Region -Company $Company -Department $Department 
+"Populating information..."
+Set-ADUser -Identity $username -Description $Title -EmailAddress $EmailAddress -Manager $Manager -MobilePhone $PhoneNumber -Title $Titlex
+"Populating information..."
+Set-ADUser -Identity $username -OfficePhone $PhoneNumber
+"Finished populating information."
 
 
 
 #Step 2: Mirror security groups from target user
-#$MirrorUser = Read-Host "Mirror User" #Used for isolated group adding requests.
-#$Username = Read-Host "New User" #Used for isolated group adding requests.
+"Step 2 of X - Starting on-prem security group mirroring..."
 if ($MirrorUser -ne "N")
 {
+"$name will mirror the security groups of $MirrorUser."
 $MirrorGroups = (get-aduser -Identity $MirrorUser -properties *).Memberof #Fetches that user's on-prem groups
 $MirrorFunction = foreach ($MirrorGroupEntry in $MirrorGroups) 
 {
@@ -69,12 +67,13 @@ else
     "The mirroring was not successful."
 }
 }
-Else{"No groups will be mirrored..."}
+Else{"No groups are requested to be mirrored."}
 
 
 #Still need to work on auto switching primary group for contractors so that 'domain users' can be auto deleted.
 if ($Contractor -eq "Y")
 {
+"Adding contractor $username to Contract Labor security group..."
 Add-ADGroupMember "CN=Contract Labor,OU=Contract Labor,OU=Sharepoint Groups,OU=Security Groups,DC=sparkhound,DC=com" $username
 }
 else {"Skipping contract labor group."}
