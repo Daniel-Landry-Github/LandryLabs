@@ -6,8 +6,22 @@ $Region = Read-Host "Region"; $PhoneNumber = Read-Host "Phone Number";$username 
 $PersonalEmail = Read-Host "Personal Email";
 $Company = "Sparkhound/Contractor";
 if ($company -ne "Sparkhound") {"Setting $username as a contractor"; $Contractor = "Y"; $Title = "Contractor ($company)"} else {$Contractor = "N"; $Title = "Contractor ($company)"};
-#Consider tossing a condition that if 'company' doesn't equal 'sparkhound', declare them as a contractor.
-$Manager = Read-Host "Manager";
+$Manager = Read-Host "Manager's username (First.Last)";
+
+
+<#
+#Attempt below at using user input of $manager as a search/filter string to target (12/16)
+
+do {$ManagerRequest = Read-Host "Manager's username (First.Last)"; 
+$ManagerVerification = (Get-ADUser -filter {samaccountname -like $ManagerRequest}).samaccountname; 
+$ManagerVerification
+"Searching for user...";
+
+
+} 
+until ($ManagerVerification -ne "Null")
+#>
+
 #Use input to search and declare a target user for the manager and refuse if a user can not be found.
 $MirrorUser = Read-Host "User to Mirror (N if no mirroring)"
 #Contractor changes: Descrption 'contractor (company)', job title 'Contractor', Company 'Contractor', AD Primary group 'Contract Labor'.
@@ -23,6 +37,7 @@ $UKGSSO = Read-Host "UKG SSO Y/N"
 $OpenAirSSO = Read-Host "OpenAir SSO Y/N"
 $NetSuiteSSO = Read-Host "NetSuite SSO Y/N"
 $Password = Read-Host "Password: " -AsSecureString
+$ContractLabor = "CN=Contract Labor,OU=Contract Labor,OU=Sharepoint Groups,OU=Security Groups,DC=sparkhound,DC=com"
 #$AdminCredUser = Get-Credential -UserName dalandry.admin@sparkhound.com -Message "Enter your admin password: "
 
 #Establishing AzureAD Connection for cloud items.
@@ -71,7 +86,7 @@ Else{"No groups are requested to be mirrored."}
 if ($Contractor -eq "Y")
 {
 "Adding contractor $username to Contract Labor security group..."
-Add-ADGroupMember "CN=Contract Labor,OU=Contract Labor,OU=Sharepoint Groups,OU=Security Groups,DC=sparkhound,DC=com" -member $username
+Add-ADGroupMember $ContractLabor -member $username
 }
 else {"Skipping contract labor group."}
 
