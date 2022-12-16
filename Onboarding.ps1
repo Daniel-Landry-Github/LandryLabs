@@ -1,21 +1,23 @@
 ﻿#"Onboarding Script"
 
 #Variable Declarations
-$FirstName = Read-Host "First Name"; $LastName = Read-Host "Last Name"; $Name = "$FirstName $LastName"; $Title = Read-Host "Title"; $Region = Read-Host "Region"; $PhoneNumber = Read-Host "Phone Number";
-$username = "$FirstName.$LastName"; $EmailAddress = "$username@sparkhound.com"; $PersonalEmail = Read-Host "Personal Email"; $Department = Read-Host "Department"; $Company = "Sparkhound"; $Manager = Read-Host "Manager";
+$FirstName = Read-Host "First Name"; $LastName = Read-Host "Last Name"; $Name = "$FirstName $LastName"; $Title = Read-Host "Title"; 
+$Region = Read-Host "Region"; $PhoneNumber = Read-Host "Phone Number";$username = "$FirstName.$LastName"; $EmailAddress = "$username@sparkhound.com"; 
+$PersonalEmail = Read-Host "Personal Email";
+$Company = "Sparkhound/Contractor";
+if ($company -ne "Sparkhound") {"Setting $username as a contractor"; $Contractor = "Y"; $Title = "Contractor ($company)"} else {$Contractor = "N"; $Title = "Contractor ($company)"};
+#Consider tossing a condition that if 'company' doesn't equal 'sparkhound', declare them as a contractor.
+$Manager = Read-Host "Manager";
+#Use input to search and declare a target user for the manager and refuse if a user can not be found.
 $MirrorUser = Read-Host "User to Mirror (N if no mirroring)"
-$Contractor = Read-Host "Contractor Y/N" 
 #Contractor changes: Descrption 'contractor (company)', job title 'Contractor', Company 'Contractor', AD Primary group 'Contract Labor'.
-if ($contractor -eq "Y")
-{
-$Company = Read-Host "Contractor Company"
-$Title = "Contractor ($company)"
-}
-else {""}
 $StartDate = Read-Host "Start Date"
-$Practice = Read-Host "Practice"
 $EmploymentStatus = Read-Host "Full time/Part time/Contractor"
 $BusinessUnit = Read-Host "Business Unit"
+$Department = Read-Host "Department";
+$Practice = Read-Host "Practice";
+#Use 'department' & 'practice' data to assist with locating the proper user OU to declare as the object path.
+Get-ADOrganizationalUnit -Filter 'name -like "$department"'
 
 $UKGSSO = Read-Host "UKG SSO Y/N"
 $OpenAirSSO = Read-Host "OpenAir SSO Y/N"
