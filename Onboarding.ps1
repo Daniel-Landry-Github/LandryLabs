@@ -9,29 +9,45 @@ if ($company -ne "Sparkhound") {"Setting $username as a contractor"; $Contractor
 $Manager = Read-Host "Manager's username (First.Last)";
 
 
-<#
-#Attempt below at using user input of $manager as a search/filter string to target (12/16)
-
-do {$ManagerRequest = Read-Host "Manager's username (First.Last)"; 
-$ManagerVerification = (Get-ADUser -filter {samaccountname -like $ManagerRequest}).samaccountname; 
-$ManagerVerification
-"Searching for user...";
+<#----------(Improved manager search - WIP)
+#Improved manager code to treat the input of $manager as a user object search request.
+#Takes $manager value and queries AD for all user objects that contain the string.
+#Pushes that new array of users out as a dynamically numbered list and asks for the right user to be selected.
+#(WIP) Allow the user input to select the appropriate user in the list and assign that selected user to the #manager function.
 
 
-} 
-until ($ManagerVerification -ne "Null")
-#>
+do {$ManagerRequest = Read-Host "Manager's username (First.Last)";
+$ManagerRequestConvert = "*$ManagerRequest*"
+$ManagerVerification = (Get-ADUser -filter {samaccountname -like $ManagerRequestConvert}).samaccountname; 
+"Searching for user..."
+"The following match your request..."
+$qty = 1; foreach ($ManagerRequestResult in $ManagerVerification) 
+{"$qty) $ManagerRequestResult"; ++$qty; $ManagerOption = $
+}
+$ManOpt
+$ManOptSelected = Read-Host "Please select the number for your choice"; $Manager = "$ManOpt.$ManOptSelected" 
+$Manager
+}
+$Manager = $ManagerVerification}
+
+
+#do ($ManagerVerification.
+#$ManagerVerification
+#} 
+#until ($ManagerVerification -ne "Null")
+----------#>
+
 
 #Use input to search and declare a target user for the manager and refuse if a user can not be found.
+#Will use the same code that manager uses to allow accurate targetting of the mirror user.
 $MirrorUser = Read-Host "User to Mirror (N if no mirroring)"
 #Contractor changes: Descrption 'contractor (company)', job title 'Contractor', Company 'Contractor', AD Primary group 'Contract Labor'.
 $StartDate = Read-Host "Start Date"
-$EmploymentStatus = Read-Host "Full time/Part time/Contractor"
 $BusinessUnit = Read-Host "Business Unit"
 $Department = Read-Host "Department";
 $Practice = Read-Host "Practice";
 #Use 'department' & 'practice' data to assist with locating the proper user OU to declare as the object path.
-Get-ADOrganizationalUnit -Filter 'name -like "$department"'
+#Get-ADOrganizationalUnit -Filter 'name -like "$department"'
 
 $UKGSSO = Read-Host "UKG SSO Y/N"
 $OpenAirSSO = Read-Host "OpenAir SSO Y/N"
@@ -134,3 +150,9 @@ $MailboxGroup = (get-azureadgroup -SearchString "NetSuiteERP_Users").objectid
 $NewUserObjectID = (get-azureaduser -filter "userprincipalname eq '$EmailAddress'").objectid
 Add-AzureADGroupMember -objectid "$MailboxGroup" -RefObjectId "$NewUserObjectID"}
 Else {"NetSuite not requested..."}
+
+#Generation of NOTES for adding to CWM ticket below:
+"Generated note for CWM ticket below"
+"===================="
+"Hello HR,"
+"$email account has been created for $Name."
