@@ -1,4 +1,12 @@
-﻿#"Onboarding Script"
+﻿#Onboarding Script written by Daniel Landry
+<#----------TO DO:
+-BUILD:
+--Access to mailbox folders (mine or dedicated) to push alerts/info via email to me.(12/17/22)
+--LONGTERM: Script to read emails given to it, process targetted information to fulfill requests, and email back the results.
+
+-IMPROVE:
+--Continue working on either improved manager section.(12/17/22)
+----------#>
 
 #Variable Declarations
 $FirstName = Read-Host "First Name"; $LastName = Read-Host "Last Name"; $Name = "$FirstName $LastName"; $Title = Read-Host "Title"; 
@@ -9,7 +17,7 @@ if ($company -ne "Sparkhound") {"Setting $username as a contractor"; $Contractor
 $Manager = Read-Host "Manager's username (First.Last)";
 
 
-<#----------(Improved manager search - WIP)
+<#----------(Improved manager search 'dynamic list to make choice' - WIP)
 #Improved manager code to treat the input of $manager as a user object search request.
 #Takes $manager value and queries AD for all user objects that contain the string.
 #Pushes that new array of users out as a dynamically numbered list and asks for the right user to be selected.
@@ -22,24 +30,36 @@ $ManagerVerification = (Get-ADUser -filter {samaccountname -like $ManagerRequest
 "Searching for user..."
 "The following match your request..."
 $qty = 1; foreach ($ManagerRequestResult in $ManagerVerification) 
-{"$qty) $ManagerRequestResult"; ++$qty; $ManagerOption = $
-}
+{"$qty) $ManagerRequestResult"; ++$qty; $ManagerOption = $}
 $ManOpt
-$ManOptSelected = Read-Host "Please select the number for your choice"; $Manager = "$ManOpt.$ManOptSelected" 
-$Manager
-}
-$Manager = $ManagerVerification}
-
-
-#do ($ManagerVerification.
-#$ManagerVerification
-#} 
-#until ($ManagerVerification -ne "Null")
+$ManOptSelected = Read-Host "Please select the number for your choice"; $Manager = "$ManOpt.$ManOptSelected"; $Manager}
 ----------#>
 
+<#----------(Improved manager search 'Return one user in array and ask for each' - WIP)
+do 
+{$ManagerRequest = Read-Host "Manager's username (First.Last)";
+    $ManagerRequestConvert = "*$ManagerRequest*"
+    $ManagerVerification = (Get-ADUser -filter {samaccountname -like $ManagerRequestConvert}).samaccountname; 
+    "Searching for user..."
+    "The following match your request..."
+    $qty = 1; 
+    do 
+        {foreach ($ManagerRequestResult in $ManagerVerification) 
+            {"$qty) $ManagerRequestResult"; ++$qty; $ManagerChoice = Read-Host "Confirm $ManagerRequestResult to be the manager? Enter Y/N"
+                if ($ManagerChoice -eq "N") {} 
+                elseif ($ManagerChoice -eq "Y") 
+                {$Manager = $ManagerRequestResult; "$ManagerRequestResult set as manager."} 
+                else {"Invalid option. Manager not declared."}
+            }
+        }
+until 
+    ($Manager -ne "null")} 
+    while 
+        (while ($Manager -eq "null"))
+$Manager
+----------#>
 
-#Use input to search and declare a target user for the manager and refuse if a user can not be found.
-#Will use the same code that manager uses to allow accurate targetting of the mirror user.
+#Will use the same WIP code that manager uses to allow accurate targetting of the mirror user.
 $MirrorUser = Read-Host "User to Mirror (N if no mirroring)"
 #Contractor changes: Descrption 'contractor (company)', job title 'Contractor', Company 'Contractor', AD Primary group 'Contract Labor'.
 $StartDate = Read-Host "Start Date"
@@ -47,7 +67,7 @@ $BusinessUnit = Read-Host "Business Unit"
 $Department = Read-Host "Department";
 $Practice = Read-Host "Practice";
 #Use 'department' & 'practice' data to assist with locating the proper user OU to declare as the object path.
-#Get-ADOrganizationalUnit -Filter 'name -like "$department"'
+#$OrganizationalUnit = Get-ADOrganizationalUnit -Filter 'name -like "$department"'
 
 $UKGSSO = Read-Host "UKG SSO Y/N"
 $OpenAirSSO = Read-Host "OpenAir SSO Y/N"
@@ -104,7 +124,7 @@ if ($Contractor -eq "Y")
 "Adding contractor $username to Contract Labor security group..."
 Add-ADGroupMember $ContractLabor -member $username
 }
-else {"Skipping contract labor group."}
+else {"Not a contractor...Skipping contract labor group."}
 
 #Step 3: Add user to applicable cloud groups (O365 license, Ultipro, netsuite, openair)
     ##Confirms detection of new user object being synced to cloud AD.
@@ -118,11 +138,11 @@ sleep 60
 Until ($NewUserCloudSynced -eq "$EmailAddress")
 
 "$username detected in AzureAD."
-"Joining $username to 'Microsoft 365 Business Premium (Cloud Group)'"
+"Joining $username to 'Microsoft 365 Business Premium (Cloud Group)' for mailbox access."
     ##Add new user to Business Premium license group.
 $MailboxGroup = (get-azureadgroup -SearchString "sg.microsoft 365 Business Premium (Cloud Group)").objectid
 $NewUserObjectID = (get-azureaduser -filter "userprincipalname eq '$EmailAddress'").objectid
-Add-AzureADGroupMember -objectid "$MailboxGroup" -RefObjectId "$NewUserObjectID"
+Add-AzureADGroupMember -objectid "$MailboxGroup" -RefObjectId "$NewUserObjectID"; $License = "sg.microsoft 365 Business Premium (Cloud Group)";
 
     ##Add new user to UKG SSO group.
 If ($UKGSSO -eq "Y")
@@ -130,7 +150,7 @@ If ($UKGSSO -eq "Y")
 "Joining $username to 'UKG' group..."
 $MailboxGroup = (get-azureadgroup -SearchString "UltiPro_Users").objectid
 $NewUserObjectID = (get-azureaduser -filter "userprincipalname eq '$EmailAddress'").objectid
-Add-AzureADGroupMember -objectid "$MailboxGroup" -RefObjectId "$NewUserObjectID"}
+Add-AzureADGroupMember -objectid "$MailboxGroup" -RefObjectId "$NewUserObjectID"; $UKG = "UltiPro_Users"}
 Else {"UKG not requested..."}
 
     ##Add new user to OpenAir SSO group.
@@ -139,7 +159,7 @@ If ($OpenAirSSO -eq "Y")
 "Joining $username to 'OpenAir' group..."
 $MailboxGroup = (get-azureadgroup -SearchString "OpenAir_Users_Prod").objectid
 $NewUserObjectID = (get-azureaduser -filter "userprincipalname eq '$EmailAddress'").objectid
-Add-AzureADGroupMember -objectid "$MailboxGroup" -RefObjectId "$NewUserObjectID"}
+Add-AzureADGroupMember -objectid "$MailboxGroup" -RefObjectId "$NewUserObjectID"; $OpenAir = "OpenAir_Users_Prod"}
 Else {"OpenAir not requested..."}
 
     ##Add new user to NetSuite SSO group.
@@ -148,11 +168,18 @@ If ($NetSuiteSSO -eq "Y")
 "Joining $username to 'NetSuite' group..."
 $MailboxGroup = (get-azureadgroup -SearchString "NetSuiteERP_Users").objectid
 $NewUserObjectID = (get-azureaduser -filter "userprincipalname eq '$EmailAddress'").objectid
-Add-AzureADGroupMember -objectid "$MailboxGroup" -RefObjectId "$NewUserObjectID"}
+Add-AzureADGroupMember -objectid "$MailboxGroup" -RefObjectId "$NewUserObjectID"; $Netsuite = "NetSuiteERP_Users"}
 Else {"NetSuite not requested..."}
 
+#Look into
+
 #Generation of NOTES for adding to CWM ticket below:
-"Generated note for CWM ticket below"
+"Generated note for ConnectwiseManage ticket below"
 "===================="
-"Hello HR,"
-"$email account has been created for $Name."
+"Hello HR,";
+"$email account has been created for $Name.";
+"Initial password emailed to HR."
+"Mirrored security groups from $MirrorUser";
+"Assigned cloud groups: $License, $UKG, $OpenAir, $Netsuite."
+"Assigned to OU: $OrganizationalUnit";
+"===================="
