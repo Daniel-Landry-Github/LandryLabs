@@ -41,7 +41,27 @@ namespace LandryLabs
 
         static void Onboard(string[] args)
         {
+            //Variables needed for Active Directory user object creation.
             Console.WriteLine("Starting the onboarding task...");
+            Console.WriteLine("Please submit the following information:");
+            Console.WriteLine("New User First Name: ");
+            string FirstName = Console.ReadLine();
+            Console.WriteLine("New User Last Name: ");
+            string LastName = Console.ReadLine();
+            string Name = (FirstName + " " + LastName);
+            string Username = (FirstName + "." + LastName);
+            string EmailAddress = (Username + "@sparkhound.com");
+            Console.WriteLine("New User Title: ");
+            string Title = Console.ReadLine();
+            Console.WriteLine("New User Region: ");
+            string Region = Console.ReadLine();
+            Console.WriteLine("New User Phone Number: ");
+            string PhoneNumber = Console.ReadLine();
+            Console.WriteLine("New User Personal Email: ");
+            string PersonalEmail = Console.ReadLine();
+            //Variables needed for Active Directory user object creation.
+
+
 
         }
 
