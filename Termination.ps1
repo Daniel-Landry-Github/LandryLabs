@@ -1,45 +1,57 @@
 #Termination Script by Daniel Landry
+
+
+<#----------Change Log:
++ Added instructions to detect, remove, and verify removal of the AD security groups of the user.
+----------#>
+
+
 $date = Get-Date -UFormat "%D %r"
 
 ##Script Start
 $username = Read-Host "Enter username (First.Last)"
-#"$date | Starting termination task on user $username..."
 
+"Starting termination task on user $username..."
 #Step 1: Disable the user object. *DONE*
 $userEnabledStatus = (Get-aduser -Identity $username -properties *).Enabled
-$userEnabledStatus
 If ($userEnabledStatus = "true") {
     "$username is currently enabled. Disabling..."
-    #set-aduser -identity $username -Enabled $false
+    set-aduser -identity $username -Enabled $false
     "$username is now disabled."
 }
 else {
-    "$username is already disabled."
+    "$username is already disabled...Proceeding."
     }
 
 
 #Step 2: Discover user's on-prem AD groups, log them, then remove them. *WIP*
-    #Decide whether to 'wipe' all groups OR 'remove' target on-prem groups.
-    #For logging/analytics, 'remove' might be best to keep track of exact groups.
-$username = "DanLand.User"
 $userGroups = (get-aduser -Identity $username -properties *).Memberof
 "Fetching groups list..."
 "----------"
 foreach ($UserGroupEntry in $userGroups)
 {
-    "Removing $username from $UserGroupEntry..."
-    Remove-ADGroupMember -identity $UserGroupEntry -member $username -Confirm:$false
+    "`nRemoving $username from $UserGroupEntry..."
+    #Remove-ADGroupMember -identity $UserGroupEntry -member $username -Confirm:$false
+    $userGroupRemovedVerify = (Get-ADGroupMember -Identity $UserGroupEntry).samaccountname
+    foreach ($PostRemovedGroupMembers in $userGroupRemovedVerify)
+    {
+        if ($PostRemovedGroupMembers -eq $username)
+        {
+            "`nUser is still in group. Removal failed...Skipping."
+        }
+        else {Write-host -NoNewline " " }
+    }
 }
 
-
-
-
-#foreach ($group in $userGroups)
-#{
-#Write-Host $group
-#sleep(1)
-#}
 #Step 3: Discover user's manager and delete from user object.
+
+
+
+
+
+
+
+
 #$user = get-aduser -Identity daniel.landry -properties *
 #$userManager = $user.manager
 #$userManager
