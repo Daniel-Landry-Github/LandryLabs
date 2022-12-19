@@ -8,11 +8,18 @@
 --Continue working on either improved manager section.(12/17/22)
 ----------#>
 
+<#----------Change Log:
++ Added an 'onboarding summary note' text file output (in LandryLabs\Tasks folder) to copy/paste to the CWM ticket. 
+o Starting to work on the feature that will send emails. This will start as direct email sending with no access to mailbox folders.
+----------#>
+
 #Variable Declarations
+#Step 1 - Information gathering.
+"Please provide the following information for this onboarding:"
 $FirstName = Read-Host "First Name"; $LastName = Read-Host "Last Name"; $Name = "$FirstName $LastName"; $Title = Read-Host "Title"; 
-$Region = Read-Host "Region"; $PhoneNumber = Read-Host "Phone Number";$username = "$FirstName.$LastName"; $EmailAddress = "$username@sparkhound.com"; 
+$Region = Read-Host "City"; $PhoneNumber = Read-Host "Phone Number";$username = "$FirstName.$LastName"; $EmailAddress = "$username@sparkhound.com"; 
 $PersonalEmail = Read-Host "Personal Email";
-$Company = "Sparkhound/Contractor";
+$Company = Read-Host "Company";
 if ($company -ne "Sparkhound") {"Setting $username as a contractor"; $Contractor = "Y"; $Title = "Contractor ($company)"} else {$Contractor = "N"; $Title = "Contractor ($company)"};
 $Manager = Read-Host "Manager's username (First.Last)";
 
@@ -79,6 +86,7 @@ $ContractLabor = "CN=Contract Labor,OU=Contract Labor,OU=Sharepoint Groups,OU=Se
 #Establishing AzureAD Connection for cloud items.
 "Establishing AzureAD Connection for cloud items..."
 Connect-AzureAD #-Credential $AdminCredUser
+#Connect-ExchangeOnline #Will use ExchangeOnline for sending mail alerts.
 
 
 
@@ -122,7 +130,7 @@ Else{"No groups are requested to be mirrored."}
 if ($Contractor -eq "Y")
 {
 "Adding contractor $username to Contract Labor security group..."
-Add-ADGroupMember $ContractLabor -member $username
+Add-ADGroupMember $ContractLabor $username
 }
 else {"Not a contractor...Skipping contract labor group."}
 
@@ -171,15 +179,18 @@ $NewUserObjectID = (get-azureaduser -filter "userprincipalname eq '$EmailAddress
 Add-AzureADGroupMember -objectid "$MailboxGroup" -RefObjectId "$NewUserObjectID"; $Netsuite = "NetSuiteERP_Users"}
 Else {"NetSuite not requested..."}
 
-#Look into
+#Mailing confirmations/alerts
+#Connect-ExchangeOnline
+#Send-MailMessage -from 'Daniel Landry <daniel.landry@sparkhound.com>' -To 'Daniel Landry <daniel.landry@sparkhound.com>' -Subject "[ONBOARDING] Task complete for $EmailAddress." -Body "Generated note for ConnectwiseManage ticket below.`n====================`nHello HR,`n$email account has been created for $Name.`nInitial password emailed to HR.`nMirrored security groups from $MirrorUser`nAssigned cloud groups: $License, $UKG, $OpenAir, $Netsuite.`nAssigned to OU: $OrganizationalUnit`n====================`n" -SmtpServer 'DS7P223MB0501'
 
 #Generation of NOTES for adding to CWM ticket below:
-"Generated note for ConnectwiseManage ticket below"
-"===================="
-"Hello HR,";
-"$email account has been created for $Name.";
-"Initial password emailed to HR."
-"Mirrored security groups from $MirrorUser";
-"Assigned cloud groups: $License, $UKG, $OpenAir, $Netsuite."
-"Assigned to OU: $OrganizationalUnit";
-"===================="
+$CWMnote = "Generated note for ConnectwiseManage ticket below`n"
+$CWMnote = ($CWMnote + "====================`n")
+$CWMnote = ($CWMnote + "Hello HR,`n");
+$CWMnote = ($CWMnote + "$email account has been created for $Name.`n");
+$CWMnote = ($CWMnote + "Initial password emailed to HR.`n");
+$CWMnote = ($CWMnote + "Mirrored security groups from $MirrorUser`n");
+$CWMnote = ($CWMnote + "Assigned cloud groups: $License, $UKG, $OpenAir, $Netsuite.`n");
+$CWMnote = ($CWMnote + "Assigned to OU: $OrganizationalUnit`n");
+$CWMnote = ($CWMnote + "====================`n");
+$CWMnote | Out-File -FilePath C:\Users\daniel.landry\Desktop\Onboarding_Task_Complete_For_$Name.txt
