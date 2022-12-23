@@ -5,28 +5,34 @@
 --LONGTERM: Script to read emails given to it, process targetted information to fulfill requests, and email back the results.
 
 -FIX:
---Email variable showing blank in CWM note that is pushed to text file.
---'$MirrorUser' showing up in CWM note as 'N'. Add condition to ONLY include 'Mirrored security groups from <user>' note if '$MirrorUser' is not 'N'.
---Confirm if code to add user to contract labor security group is working now.
+--Added commented-out code for fetching AAD's last directory sync time to consider implementing that information in some way with the 'waiting for AADSync' output statements for better monitoring.
 
 -IMPROVE:
 --Continue working on either improved user targetting instructions for $manager & $mirroruser sections.(12/17/22)
 ----------#>
 
 <#----------Change Log:
-+ Now uses $department and $practice data to detect&confirm the OU the user object will be moved to.
-+ Now moves the user automatically to their intended OU to be in AADSync scope.
-+ Adjusted the mirror manager line of the ConnectwiseManage note to conditionally show 'user mirrored to X" only if ($mirroruser -ne "N") and otherwise states that no mirror user was assigned.
-+ Adjusted the CWMNote's generated text file name to be generically "Onboarding_Logs" and to append new logs into that one file and added a timestamp at the beginning.
-+ Corrected email showing blank in the CWMNotes.
++ Contract Labor security group is now been added successfully.
++ An email alert of task completion is now successfully sent to daniel.landry@sparkhound.com 
++ Created account/mailbox for 'Landrylabs.bot' assistant.
++ Adjusted the 'task complete' email alert to push from landrylabs.bot@sparkhound.com to daniel.landry@sparkhound.com.
++ Created a second alert containing the email address and temp pass of the user and pushes it to hr@sparkhound.com.
++ Adjusted AzureAD connection to successfully login automatically.
++ Baked the new user temp password locally into the script.
 ----------#>
 
 #Variable Declarations
 #Step 1 - Information gathering.
 "Please provide the following information for this onboarding:"
 $Date = Get-Date
-$FirstName = Read-Host "First Name"; $LastName = Read-Host "Last Name"; $Name = "$FirstName $LastName"; $Title = Read-Host "Title"; 
-$Region = Read-Host "City"; $PhoneNumber = Read-Host "Phone Number";$username = "$FirstName.$LastName"; $EmailAddress = "$username@sparkhound.com"; 
+$FirstName = Read-Host "First Name"; 
+$LastName = Read-Host "Last Name"; 
+$Name = "$FirstName $LastName"; 
+$Title = Read-Host "Title"; 
+$Region = Read-Host "City"; 
+$PhoneNumber = Read-Host "Phone Number";
+$username = "$FirstName.$LastName"; 
+$EmailAddress = "$username@sparkhound.com"; 
 $PersonalEmail = Read-Host "Personal Email";
 $Company = Read-Host "Company";
 if ($company -ne "Sparkhound") {"Setting $username as a contractor"; $Contractor = "Y"; $Title = "Contractor ($company)"} else {$Contractor = "N"};
@@ -93,13 +99,25 @@ if ($DepartmentLookup -ne "Null") {"Department OU of $UserOUPath confirmed and a
 $UKGSSO = Read-Host "UKG SSO Y/N"
 $OpenAirSSO = Read-Host "OpenAir SSO Y/N"
 $NetSuiteSSO = Read-Host "NetSuite SSO Y/N"
-$Password = Read-Host "Password: " -AsSecureString
+$Password = ConvertTo-SecureString -String "Welcome@123" -AsPlainText -Force
 $ContractLabor = "CN=Contract Labor,OU=Contract Labor,OU=Sharepoint Groups,OU=Security Groups,DC=sparkhound,DC=com"
-#$AdminCredUser = Get-Credential -UserName dalandry.admin@sparkhound.com -Message "Enter your admin password: "
+#Mailing info below
+$From = "landrylabs.bot@sparkhound.com"; 
+$To = "daniel.landry@sparkhound.com";
+$Port = 587
+$Subject = "[ONBOARDING] Task complete for $EmailAddress."
+$SMTPserver = "smtp.office365.com"
+$Cred = (get-credential -credential $from $PasswordLandryLabs)
+$StepOneEmailNote = "FirstName: $Firstname`nLastName: $LastName`nFullName: $Name`nTitle: $Title`nRegion: $Region`nPhoneNumber: $PhoneNumber`nUsername: $username`nEmailAddress: $EmailAddress`nPersonalEmail: $PersonalEmail`nCompany: $Company`nManager: $Manager`nMirrorUser: $MirrorUser`nStartDate: $StartDate`nBusinessUnit: $BusinessUnit`nDepartment: $Department`nPractice: $Practice`nAssigned OU Path: $UserOUPath`nUKG: $UKGSSO`nOpenAir: $OpenAirSSO`nNetSuite: $NetSuiteSSO`nPassword: Welcome@123`n"
+
+
 
 #Establishing AzureAD Connection for cloud items.
 "Establishing AzureAD Connection for cloud items..."
-Connect-AzureAD #-Credential $AdminCredUser
+$adminUser = "dalandry.admin@sparkhound.com"
+$AdminPass = ConvertTo-SecureString -String "Spike@admin2" -AsPlainText -Force
+$AdminCred = New-Object -typename System.Management.Automation.PSCredential -argumentlist $adminUser, $AdminPass
+Connect-AzureAD -Credential $AdminCred
 #Connect-ExchangeOnline #Will use ExchangeOnline for sending mail alerts.
 
 
@@ -159,6 +177,7 @@ else {"Not a contractor...Skipping contract labor group."}
 do
 {
 "Waiting for $username to sync to AzureAD to proceed."
+#Add "(Get-AzureADTenantDetail).companylastdirsynctime" timestamp into waiting output.
 $NewUserCLoudSynced = (get-azureaduser -filter "userprincipalname eq '$EmailAddress'").userprincipalname
 sleep 60
 }
@@ -200,9 +219,10 @@ Else {"NetSuite not requested..."}
 
 #Mailing confirmations/alerts
 #Connect-ExchangeOnline
-#Send-MailMessage -from 'Daniel Landry <daniel.landry@sparkhound.com>' -To 'Daniel Landry <daniel.landry@sparkhound.com>' -Subject "[ONBOARDING] Task complete for $EmailAddress." -Body "Generated note for ConnectwiseManage ticket below.`n====================`nHello HR,`n$email account has been created for $Name.`nInitial password emailed to HR.`nMirrored security groups from $MirrorUser`nAssigned cloud groups: $License, $UKG, $OpenAir, $Netsuite.`nAssigned to OU: $OrganizationalUnit`n====================`n" -SmtpServer 'DS7P223MB0501'
+#Send-MailMessage -from 'Daniel Landry <daniel.landry@sparkhound.com>' -To 'Daniel Landry <daniel.landry@sparkhound.com>' -Subject "[ONBOARDING] Task complete for $EmailAddress." -Body "Generated note for ConnectwiseManage ticket below.`n====================`nHello HR,`n$email account has been created for $Name.`nInitial password emailed to HR.`nMirrored security groups from $MirrorUser`nAssigned cloud groups: $License, $UKG, $OpenAir, $Netsuite.`nAssigned to OU: $OrganizationalUnit`n====================`n" -SmtpServer by5pr04mb6456
 
 #Generation of NOTES for adding to CWM ticket below:
+<#
 $NameforNote = "$FirstName_$LastName"
 $OnboadingFileName = "Onboarding_Task_Complete_for_$NameforNote"
 $CWMnote = "$Date`n"
@@ -218,3 +238,60 @@ $CWMnote = ($CWMnote + "Assigned to OU: $UserOUPath`n");
 $CWMnote = ($CWMnote + "====================`n");
 $CWMnote | Out-File -FilePath C:\Users\daniel.landry\Desktop\Onboarding_Logs.txt -Append
 $CWMnote | Out-File -FilePath "C:\Users\daniel.landry\OneDrive - Sparkhound Inc\LandryLabs\Logs\Onboarding_Logs.txt" -Append
+Send-MailMessage -from 'Daniel Landry <daniel.landry@sparkhound.com>' -To 'Daniel Landry <daniel.landry@sparkhound.com>' -Subject "[ONBOARDING] Task complete for $EmailAddress." -Body "$CWMnote" -SmtpServer by5pr04mb6456
+#>
+
+
+#test
+"TEST"
+$Firstname = "Dan"
+$LastName = "Doe"
+$username = "$FirstName.$LastName"
+$EmailAddress = "$username@sparkhound.com"
+$MirrorUser = "Daniel.Landry"
+$License = "Email license"
+$UKG = "UKG"
+$OpenAir = "OA"
+$Netsuite = "NET"
+$UserOUPath = "user\ou\path"
+
+$PasswordLandryLabs = ConvertTo-SecureString -String "Spike4650@landlabs" -AsPlainText -Force
+#Mailing info below
+$From = "landrylabs.bot@sparkhound.com";
+$To = "daniel.landry@sparkhound.com";
+$Port = 587
+$Subject = "[ONBOARDING] Task complete for $EmailAddress."
+$SMTPserver = "smtp.office365.com"
+$Cred = New-Object -typename System.Management.Automation.PSCredential -argumentlist $from, $PasswordLandryLabs
+$Signature = "`n`nThank you,`nLandryLabs Bot`nTask Assistant"
+#>
+$NameforNote = "$FirstName_$LastName"
+$OnboadingFileName = "Onboarding_Task_Complete_for_$NameforNote"
+$CWMnote = "$Date`n"
+$CWMnote = ($CWMnote + "Step 6 of X - Generated note for ConnectwiseManage ticket below`n")
+$CWMnote = ($CWMnote + "====================`n")
+$CWMnote = ($CWMnote + "Hello HR,`n");
+$CWMnote = ($CWMnote + "$EmailAddress account has been created for $Name.`n");
+$CWMnote = ($CWMnote + "Initial password emailed to HR.`n");
+if ($MirrorUser -ne "N")
+{$CWMnote = ($CWMnote + "Mirrored security groups from $MirrorUser`n");} else {$CWMnote = ($CWMnote + "No user assigned to mirror security groups.`n");}
+$CWMnote = ($CWMnote + "Assigned cloud groups: $License, $UKG, $OpenAir, $Netsuite.`n");
+$CWMnote = ($CWMnote + "Assigned to OU: $UserOUPath`n");
+$CWMnote = ($CWMnote + "====================`n");
+$CWMnote | Out-File -FilePath C:\Users\daniel.landry\Desktop\Onboarding_Logs.txt -Append
+$CWMnote | Out-File -FilePath "C:\Users\daniel.landry\OneDrive - Sparkhound Inc\LandryLabs\Logs\Onboarding_Logs.txt" -Append
+Send-MailMessage -from $From -To $To -Subject $Subject -Body "$StepOneEmailNote`n$CWMnote`n$signature" -SmtpServer $SMTPserver -Credential $Cred -Verbose -UseSsl -Port $Port
+$CWMnote | Out-File -FilePath C:\Users\daniel.landry\Desktop\Onboarding_Logs.txt -Append
+$CWMnote | Out-File -FilePath "C:\Users\daniel.landry\OneDrive - Sparkhound Inc\LandryLabs\Logs\Onboarding_Logs.txt" -Append
+#>
+
+
+#Email alert pushed to HR@sparkhound.com
+$ToHR = "daniel.landry@sparkhound.com";
+$BodyHR = "Hello Hr,`n`n$EmailAddress has been created for $Name. Forwarding their initial password of 'Welcome@123'."
+
+
+
+
+Send-MailMessage -from $From -To $ToHR -Subject $Subject -Body $BodyHR`n$signature -SmtpServer $SMTPserver -Credential $Cred -Verbose -UseSsl -Port $Port
+
