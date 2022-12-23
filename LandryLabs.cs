@@ -5,6 +5,9 @@ using System.Net.Mail;
 
 /*--------------------To Do:
  * -Build the barebones functions of this program to showcase and interact with the existing powershell scripts.
+ * -Now that there is a dedicated 'landrylabs.bot@sparkhound.com' mailbox to act as the assistant:
+ *      Look into how it can grab new mail and process it's subject and contents (using keywords?) to trigger certain tasks to run and email the results back to the sender.
+ *      Should it scan exchange's mailflow to detect mail incoming to 'landrylabs.bot' address (also see if it can detect the folder the mail is received into?)
 --------------------*/
 
 /*--------------------Change Log:
@@ -32,7 +35,7 @@ namespace LandryLabs
                 Console.WriteLine("You chose the onboarding task.");
                 Onboard(args);
             }
-            else if(TaskSelection == term)
+            else if (TaskSelection == term)
             {
                 Console.WriteLine("You chose the termination task.");
                 Terminate(args);
@@ -41,28 +44,49 @@ namespace LandryLabs
 
         static void Onboard(string[] args)
         {
+            //System.Diagnostics.Process.Start("C:\\Users\\daniel.landry\\Desktop\\Onboarding.ps1");
+            
             //Variables needed for Active Directory user object creation.
             Console.WriteLine("Starting the onboarding task...");
             Console.WriteLine("Please submit the following information:");
-            Console.WriteLine("New User First Name: ");
-            string FirstName = Console.ReadLine();
-            Console.WriteLine("New User Last Name: ");
-            string LastName = Console.ReadLine();
+            Console.WriteLine("New User First Name: "); string FirstName = Console.ReadLine();
+            Console.WriteLine("New User Last Name: "); string LastName = Console.ReadLine();
             string Name = (FirstName + " " + LastName);
             string Username = (FirstName + "." + LastName);
             string EmailAddress = (Username + "@sparkhound.com");
-            Console.WriteLine("New User Title: ");
-            string Title = Console.ReadLine();
-            Console.WriteLine("New User Region: ");
-            string Region = Console.ReadLine();
-            Console.WriteLine("New User Phone Number: ");
-            string PhoneNumber = Console.ReadLine();
-            Console.WriteLine("New User Personal Email: ");
-            string PersonalEmail = Console.ReadLine();
+            Console.WriteLine("New User Title: "); string Title = Console.ReadLine();
+            Console.WriteLine("New User Region: "); string Region = Console.ReadLine();
+            Console.WriteLine("New User Phone Number: "); string PhoneNumber = Console.ReadLine();
+            Console.WriteLine("New User Personal Email: "); string PersonalEmail = Console.ReadLine();
+            Console.WriteLine("New User Company: "); string Company = Console.ReadLine();
+            string Sparkhound = "Sparkhound";
+            if (Company != Sparkhound)
+            {
+                Console.WriteLine("Assigning " + Username + " as a contractor."); string Contractor = "Y"; Title = "Contractor (" + Company + ")";
+            }
+            else
+            {
+                string Contractor = "N";
+            }
+            Console.WriteLine("New User Manager: "); string Manager = Console.ReadLine();
             //Variables needed for Active Directory user object creation.
 
+            Console.WriteLine(FirstName);
+            Console.WriteLine(LastName);
+            Console.WriteLine(Name);
+            Console.WriteLine(Username);
+            Console.WriteLine(EmailAddress);
+            Console.WriteLine(Title);
+            Console.WriteLine(Region);
+            Console.WriteLine(PhoneNumber);
+            Console.WriteLine(PersonalEmail);
 
+            
+        }
 
+        static void Manager(string[] args)
+        {
+            
         }
 
         static void Terminate(string[] args)
