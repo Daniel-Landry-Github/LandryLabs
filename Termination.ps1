@@ -1,14 +1,23 @@
 #Termination Script by Daniel Landry
 
+<#----------TO DO:
+-BUILD:
+--Block O365 sign-in.
+--Convert Exchange Mailbox to 'shared' from 'user'.
+--Revoke any licenses NOT inhereted by groups.
 
-<#----------Change Log:
-+ Detects, removes, and verifies removal of the AD security groups of the user.
-+ Unassignes user from assigned Manager.
-+ Wipes Date of Birth and Date of Hire from Extended Attributes.
-+ Moves user to the OU for disabled users.
+-FIX:
+
+-IMPROVE:
+
 ----------#>
 
+<#----------Change Log:
 
+----------#>
+
+$c = get-credentials
+Connect-msolservice
 $date = Get-Date -UFormat "%D %r"
 $DisabledOU = 'OU=Disabled Accounts,DC=sparkhound,DC=com'
 
@@ -18,6 +27,7 @@ $Name = (get-aduser -identity $username -properties *).cn
 $UserPath = (get-aduser -identity $username -properties *).distinguishedname
 $UserPathConvert = "$userPath"
 $UserPathConvert
+$EmailAddress = "$username@sparkhound.com"
 
 "Starting termination task on user $username..."
 #Step 1: Disable the user object. *DONE*
@@ -57,19 +67,19 @@ $managername = (get-aduser -identity $username -properties *).manager
 $manager = (get-aduser -identity $managername -properties *).samaccountname
 "Unassigning user from $manager..."; sleep 3
 set-aduser -identity $username -clear Manager;
-if ($manager = "null") {"Unassigned..."} else {"Unable to unassign $username from $manager"}
-sleep 3
+    if ($manager = "null") {"Unassigned..."} else {"Unable to unassign $username from $manager"}
+    sleep 3
 
 #Step 4: Discover user's "Date of Birth" and "Date of Hire" entries in extended attributes and remove them.
 $DateofBirth = (get-aduser -identity $username -properties *).extensionattribute1
 "Wiping date of birth ($DateofBirth)..."
 set-aduser -identity $username -Clear ExtensionAttribute1; sleep 3
-if ($DateofBirth = "null") {"Wiped."} else {"Unable to wipe date of birth."}
+    if ($DateofBirth = "null") {"Wiped."} else {"Unable to wipe date of birth."}
 
 $DateofHire = (get-aduser -identity $username -properties *).extensionattribute2
 "Wiping date of hire ($DateofHire)..."; sleep 3
 set-aduser -Identity $username -Clear ExtensionAttribute2
-if ($DateofHire = "null") {"Wiped."} else {"Unable to wipe date of hire."}
+    if ($DateofHire = "null") {"Wiped."} else {"Unable to wipe date of hire."}
 
 
 
@@ -82,8 +92,16 @@ $UserDisabledPath = ("CN=$Name,"+$DisabledOU)
 if ($UserPath -eq $UserDisabledPath) {"Object moved successfully."} else{"Object move failed"};
 
 
-
-
 #Step 6: Block O365 sign-in.
+"Detecting O365 sign-in access."
+$O365EnabledCheck = (Get-AzureADUser -ObjectId ).accountenabled
+if ($O365EnabledCheck -eq "True") {"Access enabled. Disabling..."; Set-AzureADUser -objectid $EmailAddress -AccountEnabled:$false} 
+else {"Access already disabled. Proceeding..."}
+
+
 #Step 7: Convert Exchange Mailbox to 'shared' from 'user'.
+#get-exomailbox -userprincipalname $emailaddress -recipienttypedetails
+
+
+
 #Step 8: Revoke any licenses NOT inhereted by groups.
